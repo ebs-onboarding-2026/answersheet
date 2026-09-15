@@ -10,6 +10,13 @@ import { DIFFICULTY_LABEL, type Difficulty, type Quiz } from "@/lib/types";
 const COUNT_OPTIONS = [5, 10, 15, 20];
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
+/** Roughly ten seconds a question, rounded so it reads like an estimate. */
+function waitHint(questionCount: number): string {
+  const seconds = questionCount * 10;
+  if (seconds < 90) return `${Math.round(seconds / 10) * 10}초`;
+  return `${Math.round(seconds / 30) / 2}분`;
+}
+
 export default function TeacherHome() {
   const router = useRouter();
   const session = useRequireRole("teacher");
@@ -141,7 +148,8 @@ export default function TeacherHome() {
               </button>
               {busy ? (
                 <span className="text-sm text-graphite">
-                  {questionCount}문항을 쓰고 있습니다. 20초쯤 걸립니다.
+                  {questionCount}문항을 쓰고 있습니다. {waitHint(questionCount)}쯤
+                  걸리니 이 탭을 열어 두세요.
                 </span>
               ) : null}
             </div>

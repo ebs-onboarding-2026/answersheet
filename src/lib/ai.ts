@@ -67,7 +67,12 @@ const outlineJsonSchema = {
   additionalProperties: false,
   required: ["title", "description", "points"],
   properties: {
-    title: { type: "string", description: "퀴즈 제목. 20자 이내." },
+    title: {
+      type: "string",
+      description:
+        "퀴즈 제목. 다루는 내용을 가리키는 이름만 20자 이내로. " +
+        "'확인 지점', '퀴즈', '문제', '평가' 같은 작업 용어는 넣지 않는다.",
+    },
     description: { type: "string", description: "이 퀴즈가 무엇을 확인하는지 한 문장." },
     points: {
       type: "array",

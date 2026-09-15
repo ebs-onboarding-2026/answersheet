@@ -1,0 +1,4 @@
+# 앱 배포에 들어갈 이유가 없는 것들. README가 쓰는 캡처와 영상은 GitHub이 서빙하고,
+# video/는 Remotion 프로젝트라 앱 빌드와 무관하다.
+docs
+video

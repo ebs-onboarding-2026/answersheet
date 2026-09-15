@@ -358,9 +358,12 @@ export default function TeacherQuizPage() {
                 <h3 className="mt-12 border-b border-dropout pb-3 text-[1rem] font-semibold tracking-tight">
                   문항별 정답률
                 </h3>
+                {/* Each row needs min-w-0: a grid item defaults to
+                    min-width:auto, which lets one long prompt widen the whole
+                    page instead of truncating. */}
                 <ul className="mt-4 grid gap-3.5">
                   {perQuestion.map((q) => (
-                    <li key={q.position} className="flex items-start gap-4">
+                    <li key={q.position} className="flex min-w-0 items-start gap-4">
                       <span className="w-7 shrink-0 pt-0.5 text-[0.85rem] text-graphite-lt">
                         {String(q.position).padStart(2, "0")}
                       </span>

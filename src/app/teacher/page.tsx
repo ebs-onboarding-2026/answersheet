@@ -10,9 +10,12 @@ import { DIFFICULTY_LABEL, type Difficulty, type Quiz } from "@/lib/types";
 const COUNT_OPTIONS = [5, 10, 15, 20];
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
-/** Roughly ten seconds a question, rounded so it reads like an estimate. */
+/**
+ * Measured at roughly two and a half seconds a question now that the questions
+ * are written in parallel, rounded so it reads like the estimate it is.
+ */
 function waitHint(questionCount: number): string {
-  const seconds = questionCount * 10;
+  const seconds = questionCount * 2.5 + 3;
   if (seconds < 90) return `${Math.round(seconds / 10) * 10}초`;
   return `${Math.round(seconds / 30) / 2}분`;
 }

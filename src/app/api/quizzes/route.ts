@@ -5,7 +5,9 @@ import { generateQuiz } from "@/lib/ai";
 import { rowToQuiz, message, type QuizRow } from "@/lib/rows";
 import { AuthError, requireUser } from "@/lib/users";
 
-export const maxDuration = 120;
+// The reasoning models take roughly ten seconds a question, so twenty of them
+// runs past the old two-minute ceiling.
+export const maxDuration = 300;
 
 const createSchema = z.object({
   topic: z.string().trim().min(2, "주제를 2자 이상 적어 주세요.").max(200),

@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Masthead, Notice, Empty } from "@/components/Chrome";
 import { useRequireRole } from "@/lib/guard";
-import { DIFFICULTY_LABEL, type Quiz } from "@/lib/types";
+import {
+  DIFFICULTY_LABEL,
+  type AttemptHistoryItem,
+  type Quiz,
+} from "@/lib/types";
 
 export default function StudentHome() {
   const router = useRouter();
@@ -13,6 +17,7 @@ export default function StudentHome() {
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<AttemptHistoryItem[] | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +36,20 @@ export default function StudentHome() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/attempts?userId=${session.userId}`);
+      const data = await res.json();
+      if (cancelled) return;
+      setHistory(res.ok ? data.attempts : []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
   function enterCode(event: React.FormEvent) {
     event.preventDefault();
     const clean = code.trim().toUpperCase();
@@ -42,6 +61,11 @@ export default function StudentHome() {
   }
 
   if (!session) return <Masthead />;
+
+  const bestByQuiz = new Map<string, number>();
+  for (const a of history ?? []) {
+    bestByQuiz.set(a.quizId, Math.max(bestByQuiz.get(a.quizId) ?? 0, a.score));
+  }
 
   return (
     <>
@@ -82,6 +106,53 @@ export default function StudentHome() {
           </div>
         ) : null}
 
+        {/* Scores used to exist only on the redirect after submitting. */}
+        <section className="mt-12">
+          <div className="flex items-baseline justify-between border-b border-dropout pb-3">
+            <h2 className="text-[1.05rem] font-semibold tracking-tight">내 응시 기록</h2>
+            <span className="text-sm text-graphite-lt">
+              {history === null ? "" : `${history.length}번`}
+            </span>
+          </div>
+
+          <div className="mt-5">
+            {history === null ? (
+              <p className="py-8 text-sm text-graphite">불러오는 중…</p>
+            ) : history.length === 0 ? (
+              <Empty title="아직 푼 퀴즈가 없습니다. 아래에서 하나 골라 보세요." />
+            ) : (
+              <ul className="grid gap-2">
+                {history.map((a) => (
+                  <li key={a.id}>
+                    <Link
+                      href={`/result/${a.id}`}
+                      className="sheet flex flex-wrap items-center gap-x-5 gap-y-1.5 p-4 transition-colors hover:border-ink"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[0.98rem] font-medium">
+                          {a.quizTitle}
+                        </span>
+                        <span className="mt-1 block text-[0.83rem] text-graphite">
+                          {a.correctCount} / {a.totalCount}문항 정답 —{" "}
+                          {new Date(a.submittedAt).toLocaleString("ko-KR", {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </span>
+                      <span className="text-[1.1rem] font-semibold tracking-tight text-redpen">
+                        {a.score}점
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
         <section className="mt-12">
           <div className="flex items-baseline justify-between border-b border-dropout pb-3">
             <h2 className="text-[1.05rem] font-semibold tracking-tight">공개된 퀴즈</h2>
@@ -112,9 +183,15 @@ export default function StudentHome() {
                           {DIFFICULTY_LABEL[quiz.difficulty]}
                         </span>
                       </span>
-                      <span className="text-[0.83rem] text-graphite-lt">
-                        응시 {quiz.attemptCount ?? 0}명
-                      </span>
+                      {bestByQuiz.has(quiz.id) ? (
+                        <span className="text-[0.83rem] text-graphite">
+                          푼 적 있음 — 최고 {bestByQuiz.get(quiz.id)}점
+                        </span>
+                      ) : (
+                        <span className="text-[0.83rem] text-graphite-lt">
+                          응시 {quiz.attemptCount ?? 0}명
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}

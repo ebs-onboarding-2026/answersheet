@@ -3,12 +3,64 @@ import { z } from "zod";
 import { sql } from "@/lib/db";
 import { message } from "@/lib/rows";
 import { AuthError, requireUser } from "@/lib/users";
+import type { AttemptHistoryItem } from "@/lib/types";
 
 const submitSchema = z.object({
   quizId: z.string().uuid(),
   userId: z.string().min(1),
   answers: z.array(z.number().int().min(0).max(9).nullable()),
 });
+
+type HistoryRow = {
+  id: string;
+  quiz_id: string;
+  nickname: string;
+  correct_count: number;
+  total_count: number;
+  score: number;
+  submitted_at: string;
+  title: string;
+  code: string;
+};
+
+/**
+ * GET /api/attempts?userId=… — everything this student has sat, newest first.
+ * Without it a score was only ever visible on the redirect after submitting.
+ */
+export async function GET(request: Request) {
+  const userId = new URL(request.url).searchParams.get("userId");
+
+  try {
+    await requireUser(userId, "student");
+
+    const rows = (await sql`
+      select a.id, a.quiz_id, a.nickname, a.correct_count, a.total_count,
+             a.score, a.submitted_at, q.title, q.code
+      from attempts a join quizzes q on q.id = a.quiz_id
+      where a.user_id = ${userId}
+      order by a.submitted_at desc
+    `) as HistoryRow[];
+
+    const attempts: AttemptHistoryItem[] = rows.map((r) => ({
+      id: r.id,
+      quizId: r.quiz_id,
+      nickname: r.nickname,
+      correctCount: r.correct_count,
+      totalCount: r.total_count,
+      score: r.score,
+      submittedAt: r.submitted_at,
+      quizTitle: r.title,
+      quizCode: r.code,
+    }));
+
+    return NextResponse.json({ attempts });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ error: message(error) }, { status: 500 });
+  }
+}
 
 /** POST /api/attempts — grade on the server and store the attempt. */
 export async function POST(request: Request) {

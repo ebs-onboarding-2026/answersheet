@@ -4,21 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Masthead, Notice, Empty } from "@/components/Chrome";
-import { useSession } from "@/lib/session";
+import { useRequireRole } from "@/lib/guard";
 import { DIFFICULTY_LABEL, type Quiz } from "@/lib/types";
 
 export default function StudentHome() {
   const router = useRouter();
-  const session = useSession();
+  const session = useRequireRole("student");
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (session === false) router.replace("/");
-  }, [session, router]);
 
   useEffect(() => {
     let cancelled = false;

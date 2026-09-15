@@ -8,6 +8,7 @@ type Params = { params: Promise<{ id: string }> };
 type Row = {
   id: string;
   quiz_id: string;
+  user_id: string;
   nickname: string;
   answers: (number | null)[];
   correct_count: number;
@@ -16,20 +17,37 @@ type Row = {
   submitted_at: string;
   title: string;
   code: string;
+  owner_id: string;
 };
 
-/** GET /api/attempts/:id — the graded sheet, answer key included now that it is over. */
-export async function GET(_request: Request, { params }: Params) {
+/**
+ * GET /api/attempts/:id?viewerId=… — the graded sheet, answer key included now
+ * that it is over. The key is in here, so only two people may read it: the
+ * student who sat it and the author of the quiz.
+ */
+export async function GET(request: Request, { params }: Params) {
   const { id } = await params;
+  const viewerId = new URL(request.url).searchParams.get("viewerId");
+
   try {
     const [row] = (await sql`
-      select a.*, q.title, q.code
+      select a.*, q.title, q.code, q.owner_id
       from attempts a join quizzes q on q.id = a.quiz_id
       where a.id = ${id}
     `) as Row[];
 
     if (!row) {
       return NextResponse.json({ error: "응시 기록을 찾을 수 없습니다." }, { status: 404 });
+    }
+
+    if (!viewerId) {
+      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    }
+    if (viewerId !== row.user_id && viewerId !== row.owner_id) {
+      return NextResponse.json(
+        { error: "이 답안지를 볼 권한이 없습니다." },
+        { status: 403 }
+      );
     }
 
     const questions = (await sql`

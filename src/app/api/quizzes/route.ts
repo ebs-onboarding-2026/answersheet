@@ -3,6 +3,7 @@ import { z } from "zod";
 import { sql, makeShareCode } from "@/lib/db";
 import { generateQuiz } from "@/lib/ai";
 import { rowToQuiz, message, type QuizRow } from "@/lib/rows";
+import { AuthError, requireUser } from "@/lib/users";
 
 export const maxDuration = 120;
 
@@ -11,7 +12,6 @@ const createSchema = z.object({
   questionCount: z.number().int().min(1).max(30),
   difficulty: z.enum(["easy", "medium", "hard"]),
   ownerId: z.string().min(1),
-  ownerNickname: z.string().trim().min(1).max(40),
 });
 
 /** GET /api/quizzes?scope=mine&ownerId=… | ?scope=published */
@@ -69,6 +69,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "요청을 읽지 못했습니다." }, { status: 400 });
   }
 
+  // The body can claim any ownerId, so the account and its role are read back
+  // from the table before a single token is spent on generation.
+  let owner;
+  try {
+    owner = await requireUser(input.ownerId, "teacher");
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ error: message(error) }, { status: 500 });
+  }
+
   let generated;
   try {
     generated = await generateQuiz(input);
@@ -83,7 +95,7 @@ export async function POST(request: Request) {
         (code, topic, title, description, difficulty, question_count, owner_id, owner_nickname)
       values
         (${code}, ${input.topic}, ${generated.title}, ${generated.description},
-         ${input.difficulty}, ${generated.questions.length}, ${input.ownerId}, ${input.ownerNickname})
+         ${input.difficulty}, ${generated.questions.length}, ${owner.id}, ${owner.nickname})
       returning *
     `) as QuizRow[];
 

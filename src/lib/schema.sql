@@ -45,3 +45,46 @@ create table if not exists attempts (
 
 create index if not exists attempts_quiz_idx on attempts (quiz_id, submitted_at desc);
 create index if not exists attempts_user_idx on attempts (user_id, submitted_at desc);
+
+-- An account, keyed by the name the person types on the way in. Before this
+-- table the identity was a UUID minted in localStorage, so a new browser — or
+-- just pressing 나가기 — silently orphaned everything the author had made.
+create table if not exists users (
+  id         uuid primary key default gen_random_uuid(),
+  nickname   text not null,
+  role       text not null check (role in ('teacher','student')),
+  created_at timestamptz not null default now()
+);
+
+-- Folded, so "선생님" and "  선생님 " are the one account and not three.
+create unique index if not exists users_nickname_key on users (lower(nickname));
+
+-- Backfill: hand every pre-account quiz back to the name that wrote it.
+insert into users (nickname, role)
+select distinct on (lower(owner_nickname)) owner_nickname, 'teacher'
+from quizzes
+where not exists (
+  select 1 from users u where lower(u.nickname) = lower(quizzes.owner_nickname)
+)
+order by lower(owner_nickname), created_at;
+
+update quizzes q
+set owner_id = u.id::text
+from users u
+where lower(u.nickname) = lower(q.owner_nickname)
+  and q.owner_id is distinct from u.id::text;
+
+-- Same for anyone who only ever sat a quiz.
+insert into users (nickname, role)
+select distinct on (lower(nickname)) nickname, 'student'
+from attempts
+where not exists (
+  select 1 from users u where lower(u.nickname) = lower(attempts.nickname)
+)
+order by lower(nickname), submitted_at;
+
+update attempts a
+set user_id = u.id::text
+from users u
+where lower(u.nickname) = lower(a.nickname)
+  and a.user_id is distinct from u.id::text;

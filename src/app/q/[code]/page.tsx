@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Masthead, Notice, Bubble, Mark } from "@/components/Chrome";
-import { readSession, writeSession, useSession } from "@/lib/session";
+import { readSession, signIn, useSession } from "@/lib/session";
 import { DIFFICULTY_LABEL, type QuizWithQuestions } from "@/lib/types";
 
 const CHOICE_LABELS = ["ⓐ", "ⓑ", "ⓒ", "ⓓ", "ⓔ"];
@@ -94,7 +94,6 @@ export default function TakeQuizPage() {
         body: JSON.stringify({
           quizId: quiz.id,
           userId: active.userId,
-          nickname: active.nickname,
           answers,
         }),
       });
@@ -304,16 +303,27 @@ function NicknameGate({ quiz }: { quiz: QuizWithQuestions }) {
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function start(event: React.FormEvent) {
+  const [busy, setBusy] = useState(false);
+
+  async function start(event: React.FormEvent) {
     event.preventDefault();
     const trimmed = nickname.trim();
     if (!trimmed) {
       setError("닉네임을 적어 주세요.");
       return;
     }
-    writeSession(trimmed, "student");
-    // Re-render the page with a session in place.
-    window.location.reload();
+    if (busy) return;
+
+    setBusy(true);
+    setError(null);
+    try {
+      await signIn(trimmed, "student");
+      // Re-render the page with a session in place.
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "시작하지 못했습니다.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -348,8 +358,8 @@ function NicknameGate({ quiz }: { quiz: QuizWithQuestions }) {
             {error}
           </p>
         ) : null}
-        <button type="submit" className="btn btn-ink mt-5 w-full">
-          시작하기
+        <button type="submit" className="btn btn-ink mt-5 w-full" disabled={busy}>
+          {busy ? "들어가는 중…" : "시작하기"}
         </button>
       </form>
     </main>

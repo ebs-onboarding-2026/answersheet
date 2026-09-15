@@ -1,0 +1,24 @@
+{
+  "name": "answersheet-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "답안지 소개영상 — Remotion. 앱과 의존성을 나눠 두어 배포 번들에 끼지 않습니다.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "build": "npm run build:mp4 && npm run build:gif",
+    "build:mp4": "remotion render src/index.ts IntroFull ../docs/video/intro.mp4 --codec=h264 --crf=20",
+    "build:gif": "remotion render src/index.ts IntroLoop ../docs/video/intro.gif --codec=gif --every-nth-frame=3 --scale=0.375 --number-of-gif-loops=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.524",
+    "@remotion/google-fonts": "4.0.524",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.524"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,179 @@
+@import "tailwindcss";
+
+:root {
+  /* Paper — cool, slightly blued stock */
+  --paper:        #f7f9fc;
+  --sheet:        #ffffff;
+
+  /* Drop-out ink: the light cyan an OMR scanner ignores. Carries all structure. */
+  --dropout:      #d8ecf7;
+  --dropout-mid:  #9ecfe6;
+  --dropout-deep: #4f97bd;
+
+  /* Ink navy: carries all content */
+  --ink:          #12233a;
+  --graphite:     #5c6a7c;
+  --graphite-lt:  #8a97a8;
+
+  /* Red pen: grading marks only */
+  --redpen:       #cf2e3f;
+  --redpen-soft:  #fbe9eb;
+
+  --ok:           #1a7f5a;
+  --ok-soft:      #e6f4ee;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-dropout: var(--dropout);
+  --color-dropout-mid: var(--dropout-mid);
+  --color-dropout-deep: var(--dropout-deep);
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-graphite-lt: var(--graphite-lt);
+  --color-redpen: var(--redpen);
+  --color-redpen-soft: var(--redpen-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --font-sans: var(--font-plex-kr);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-kr), system-ui, sans-serif;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.011em;
+  margin: 0;
+  min-height: 100dvh;
+}
+
+::selection { background: var(--dropout); color: var(--ink); }
+
+/* ---- Timing marks: the black registration ticks down a real OMR card ---- */
+.timing-rail {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 26px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--ink) 0 9px,
+      transparent 9px 27px
+    );
+  background-position: 0 14px;
+  background-size: 11px 100%;
+  background-repeat: repeat-y;
+  border-inline-end: 1px solid var(--dropout);
+  opacity: 0.88;
+  pointer-events: none;
+  z-index: 40;
+}
+
+@media (max-width: 720px) {
+  .timing-rail { width: 14px; background-size: 6px 100%; }
+}
+
+/* ---- Bubble: the one interaction vocabulary of this interface ---- */
+.bubble {
+  --size: 1.55rem;
+  inline-size: var(--size);
+  block-size: var(--size);
+  border-radius: 999px;
+  border: 1.5px solid var(--dropout-mid);
+  background: var(--sheet);
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  position: relative;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  background: var(--ink);
+  transform: scale(0.12);
+  opacity: 0;
+  transition: transform 180ms cubic-bezier(0.34, 1.3, 0.64, 1), opacity 120ms ease;
+}
+
+.bubble[data-marked="true"] { border-color: var(--ink); }
+.bubble[data-marked="true"]::after { transform: scale(1); opacity: 1; }
+
+.bubble[data-tone="red"] { border-color: var(--redpen); }
+.bubble[data-tone="red"]::after { background: var(--redpen); }
+.bubble[data-tone="green"] { border-color: var(--ok); }
+.bubble[data-tone="green"]::after { background: var(--ok); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble::after { transition: opacity 1ms; }
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
+
+/* ---- Sheet: crisp printed paper, near-zero radius ---- */
+.sheet {
+  background: var(--sheet);
+  border: 1px solid var(--dropout);
+  border-radius: 2px;
+}
+
+.rule { border-block-start: 1px solid var(--dropout); }
+
+/* Focus: a drawn box, never a glow */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.field {
+  inline-size: 100%;
+  background: var(--sheet);
+  border: 1px solid var(--dropout-mid);
+  border-radius: 2px;
+  padding: 0.7rem 0.8rem;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.975rem;
+}
+.field::placeholder { color: var(--graphite-lt); }
+.field:focus { border-color: var(--ink); outline: none; box-shadow: inset 0 0 0 1px var(--ink); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 2px;
+  padding: 0.68rem 1.1rem;
+  font-size: 0.94rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ink { background: var(--ink); color: #fff; }
+.btn-ink:not(:disabled):hover { background: #0a1729; }
+.btn-line { background: var(--sheet); color: var(--ink); border-color: var(--dropout-mid); }
+.btn-line:not(:disabled):hover { border-color: var(--ink); }
+.btn-quiet { background: transparent; color: var(--graphite); }
+.btn-quiet:not(:disabled):hover { color: var(--ink); }
+
+/* Grid paper backdrop for the landing hero */
+.grid-paper {
+  background-image:
+    linear-gradient(var(--dropout) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dropout) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}

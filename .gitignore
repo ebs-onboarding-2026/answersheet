@@ -42,3 +42,5 @@ next-env.d.ts
 
 # 예시 파일은 값이 placeholder라 커밋합니다
 !.env.example
+
+.env*

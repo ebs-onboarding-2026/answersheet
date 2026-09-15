@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 소개영상은 자체 package.json과 tsconfig를 쓰는 별도 패키지다.
+    "video/**",
   ]),
 ]);
 

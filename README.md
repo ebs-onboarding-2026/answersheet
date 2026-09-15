@@ -1,5 +1,9 @@
 # 답안지
 
+[![답안지 소개영상](docs/video/intro.gif)](docs/video/intro.mp4)
+
+*움직이는 그림을 누르면 35초 전체 영상이 열립니다.*
+
 주제를 입력하면 객관식 문항을 만들어 주고, 공개하면 학생이 한 문항씩 풀어 바로 점수를
 확인하는 퀴즈 사이트입니다. 2026년 EBS 신규사원 연수과정 실습 결과물입니다.
 
@@ -164,6 +168,26 @@ npm run check:accounts   # 계정·역할·권한 회귀 테스트 (dev 서버�
 정답 위치 분산은 서버가 맡습니다. 각 호출이 자기 문항만 보기 때문에 모델은 퀴즈 전체를
 놓고 흩을 수 없습니다. 다섯 자리에 고르게 배정하고 오답 순서도 다시 섞습니다. 이 때문에
 해설에서는 선택지를 기호가 아니라 내용으로 가리키게 했습니다.
+
+## 소개영상
+
+맨 위의 영상은 [Remotion](https://www.remotion.dev/)으로 만듭니다. `video/`가 자체
+`package.json`을 들고 있어 앱 의존성과 섞이지 않고, 배포 번들에도 들어가지 않습니다.
+
+```bash
+cd video
+npm install
+npm run studio     # 미리보기 (http://localhost:3000)
+npm run build      # docs/video/intro.mp4 와 intro.gif
+```
+
+화면은 새로 찍지 않고 `docs/screenshots/`의 캡처를 그대로 씁니다. Remotion의
+`publicDir`이 `../docs`를 가리키고 있어 사본을 두지 않으며, 버블이 채워지거나 빨간펜이
+그어지는 부분만 벡터로 그 위에 얹습니다. 캡처를 다시 찍으면 `video/src/scenes/*.tsx`
+위쪽에 적어 둔 좌표(캡처 원본 픽셀 기준)를 함께 맞춰야 합니다.
+
+Remotion은 MIT가 아닙니다. 개인과 직원 3인 이하 영리법인, 비영리 조직은 무료이고, 그
+밖의 영리조직은 회사 라이선스가 필요합니다 — https://www.remotion.pro/license
 
 ## 배포
 

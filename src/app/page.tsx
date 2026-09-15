@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mark, Bubble } from "@/components/Chrome";
-import { useSession, writeSession } from "@/lib/session";
+import { useSession, signIn } from "@/lib/session";
 import type { Role } from "@/lib/types";
 
 export default function Home() {
   const router = useRouter();
   const session = useSession();
   const [touched, setTouched] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Whatever the visitor types wins; otherwise fall back to their last visit.
   const [nicknameDraft, setNicknameDraft] = useState<string | null>(null);
@@ -22,12 +24,22 @@ export default function Home() {
   const trimmed = nickname.trim();
   const ready = trimmed.length >= 1 && role !== null;
 
-  function start(event: React.FormEvent) {
+  async function start(event: React.FormEvent) {
     event.preventDefault();
     setTouched(true);
-    if (!ready || !role) return;
-    writeSession(trimmed, role);
-    router.push(role === "teacher" ? "/teacher" : "/student");
+    setError(null);
+    if (!ready || !role || busy) return;
+
+    setBusy(true);
+    try {
+      // The nickname is the account: the same name always comes back to the
+      // same quizzes, on any browser.
+      const signedIn = await signIn(trimmed, role);
+      router.push(signedIn.role === "teacher" ? "/teacher" : "/student");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "로그인하지 못했습니다.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -91,9 +103,24 @@ export default function Home() {
             </p>
           ) : null}
 
-          <button type="submit" className="btn btn-ink mt-6 w-full sm:w-auto sm:px-8">
-            시작하기
+          {error ? (
+            <p role="alert" className="mt-4 max-w-[46ch] text-sm leading-relaxed text-redpen">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            className="btn btn-ink mt-6 w-full sm:w-auto sm:px-8"
+            disabled={busy}
+          >
+            {busy ? "들어가는 중…" : "시작하기"}
           </button>
+
+          <p className="mt-4 max-w-[44ch] text-[0.82rem] leading-relaxed text-graphite-lt">
+            같은 닉네임으로 다시 들어오면 이전에 만든 퀴즈와 결과가 그대로 있습니다.
+            닉네임 하나에 역할 하나입니다.
+          </p>
         </form>
       </div>
 

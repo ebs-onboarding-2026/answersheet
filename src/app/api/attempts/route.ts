@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
 import { message } from "@/lib/rows";
+import { AuthError, requireUser } from "@/lib/users";
 
 const submitSchema = z.object({
   quizId: z.string().uuid(),
   userId: z.string().min(1),
-  nickname: z.string().trim().min(1).max(40),
   answers: z.array(z.number().int().min(0).max(9).nullable()),
 });
 
@@ -17,6 +17,17 @@ export async function POST(request: Request) {
     input = submitSchema.parse(await request.json());
   } catch {
     return NextResponse.json({ error: "제출 내용을 읽지 못했습니다." }, { status: 400 });
+  }
+
+  // The name on the answer sheet comes from the account, not the request body.
+  let student;
+  try {
+    student = await requireUser(input.userId, "student");
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 
   try {
@@ -54,7 +65,7 @@ export async function POST(request: Request) {
 
     const [attempt] = (await sql`
       insert into attempts (quiz_id, user_id, nickname, answers, correct_count, total_count, score)
-      values (${input.quizId}, ${input.userId}, ${input.nickname},
+      values (${input.quizId}, ${student.id}, ${student.nickname},
               ${JSON.stringify(answers)}::jsonb, ${correctCount}, ${totalCount}, ${score})
       returning id
     `) as { id: string }[];

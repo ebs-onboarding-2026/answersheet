@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Masthead, Notice, Empty } from "@/components/Chrome";
-import { useSession } from "@/lib/session";
+import { useRequireRole } from "@/lib/guard";
 import { DIFFICULTY_LABEL, type Difficulty, type Quiz } from "@/lib/types";
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
@@ -12,7 +12,7 @@ const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
 export default function TeacherHome() {
   const router = useRouter();
-  const session = useSession();
+  const session = useRequireRole("teacher");
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,10 +21,6 @@ export default function TeacherHome() {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (session === false) router.replace("/");
-  }, [session, router]);
 
   useEffect(() => {
     if (!session) return;
@@ -56,7 +52,6 @@ export default function TeacherHome() {
           questionCount,
           difficulty,
           ownerId: session.userId,
-          ownerNickname: session.nickname,
         }),
       });
       const data = await res.json();

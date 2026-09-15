@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Masthead, Notice, Bubble, Empty } from "@/components/Chrome";
-import { useSession } from "@/lib/session";
+import { useRequireRole } from "@/lib/guard";
 import {
   DIFFICULTY_LABEL,
   type AttemptSummary,
@@ -22,8 +22,7 @@ type PerQuestion = {
 const CHOICE_LABELS = ["ⓐ", "ⓑ", "ⓒ", "ⓓ", "ⓔ"];
 
 export default function TeacherQuizPage() {
-  const router = useRouter();
-  const session = useSession();
+  const session = useRequireRole("teacher");
   const { id } = useParams<{ id: string }>();
 
   const [quiz, setQuiz] = useState<QuizWithQuestions | null>(null);
@@ -33,10 +32,6 @@ export default function TeacherQuizPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState<"link" | "code" | null>(null);
-
-  useEffect(() => {
-    if (session === false) router.replace("/");
-  }, [session, router]);
 
   useEffect(() => {
     if (!session) return;
@@ -305,32 +300,54 @@ export default function TeacherQuizPage() {
                 </div>
 
                 <div className="mt-6 overflow-x-auto">
-                  <table className="w-full min-w-[440px] border-collapse text-left">
+                  <table className="w-full min-w-[520px] border-collapse text-left">
                     <thead>
                       <tr className="border-b border-dropout text-[0.8rem] text-graphite">
                         <th className="py-2 pr-4 font-medium">닉네임</th>
                         <th className="py-2 pr-4 font-medium">점수</th>
                         <th className="py-2 pr-4 font-medium">정답</th>
-                        <th className="py-2 font-medium">응시 시각</th>
+                        <th className="py-2 pr-4 font-medium">응시 시각</th>
+                        <th className="py-2 font-medium">
+                          <span className="sr-only">답안</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {attempts.map((a) => (
-                        <tr key={a.id} className="border-b border-dropout/70">
-                          <td className="py-2.5 pr-4 text-[0.92rem]">{a.nickname}</td>
+                        <tr
+                          key={a.id}
+                          className="border-b border-dropout/70 hover:bg-dropout/30"
+                        >
+                          <td className="py-2.5 pr-4 text-[0.92rem]">
+                            {/* The whole point of the table: reaching one sheet. */}
+                            <Link
+                              href={`/teacher/${quiz.id}/attempt/${a.id}`}
+                              className="underline decoration-dropout-mid underline-offset-4 hover:decoration-ink"
+                            >
+                              {a.nickname}
+                            </Link>
+                          </td>
                           <td className="py-2.5 pr-4 text-[0.92rem] font-semibold text-redpen">
                             {a.score}
                           </td>
                           <td className="py-2.5 pr-4 text-[0.88rem] text-graphite">
                             {a.correctCount} / {a.totalCount}
                           </td>
-                          <td className="py-2.5 text-[0.88rem] text-graphite">
+                          <td className="py-2.5 pr-4 text-[0.88rem] text-graphite">
                             {new Date(a.submittedAt).toLocaleString("ko-KR", {
                               month: "numeric",
                               day: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
+                          </td>
+                          <td className="py-2.5 text-right">
+                            <Link
+                              href={`/teacher/${quiz.id}/attempt/${a.id}`}
+                              className="text-[0.85rem] text-graphite hover:text-ink"
+                            >
+                              답안 보기
+                            </Link>
                           </td>
                         </tr>
                       ))}

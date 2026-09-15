@@ -119,5 +119,30 @@ if (attemptId) {
   check("남의 답안지는 못 본다 (403)", outsider.status === 403, `status ${outsider.status}`);
 }
 
+
+// 9. A student's own history. STUDENT_NICKNAME names someone who has sat a
+//    quiz; skipped when it is not set.
+const sitter = process.env.STUDENT_NICKNAME;
+if (sitter) {
+  const who = await post("/api/session", { nickname: sitter, role: "student" });
+  const mineList = await get(`/api/attempts?userId=${who.data?.user?.id}`);
+  check(`'${sitter}' 학생이 자기 응시 기록을 본다`,
+    mineList.status === 200 && mineList.data?.attempts?.length > 0,
+    `${mineList.data?.attempts?.length ?? 0}건`);
+
+  const row = mineList.data?.attempts?.[0];
+  check("기록에 퀴즈 제목과 점수가 함께 온다",
+    !!row?.quizTitle && typeof row?.score === "number",
+    `${row?.quizTitle} ${row?.score}점`);
+}
+
+// 10. The history is not readable by anyone else.
+const peek = await get(`/api/attempts?userId=${first.data?.user?.id}`);
+check("교수자 계정으로는 학생 기록 API를 못 쓴다 (403)", peek.status === 403,
+  `status ${peek.status}`);
+
+const noone = await get("/api/attempts");
+check("로그인 없이 기록 조회 불가 (401)", noone.status === 401, `status ${noone.status}`);
+
 console.log(`\n${failures === 0 ? "모두 통과" : `${failures}개 실패`}`);
 process.exit(failures === 0 ? 0 : 1);

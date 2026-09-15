@@ -47,6 +47,12 @@ export type AttemptSummary = {
   submittedAt: string;
 };
 
+/** A row in the student's own history — enough to recognise and reopen it. */
+export type AttemptHistoryItem = AttemptSummary & {
+  quizTitle: string;
+  quizCode: string;
+};
+
 export type GradedAnswer = {
   position: number;
   prompt: string;
